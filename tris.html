@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Tris</title>
+    <style>
+        .table{
+            width: 450px;
+            margin: 0 auto;
+        }
+        .table-row {
+            white-space: nowrap;
+            height: 150px;
+        }
+        .tris-cell {
+            display: inline-block;
+            width: 150px;
+            height: 150px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        .tris-cell > div {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            font-size: 50px;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #row-2{
+            border-top: solid 3px #000;
+            border-bottom: solid 3px #000;
+        }
+        .cell-col-2{
+            border-right: solid 3px #000;
+            border-left: solid 3px #000;
+        }
+    </style>
+    <script>
+        const PLAYER_ONE = {
+            name: "Giocatore Uno",
+            simbolo: "X"
+        }
+        const PLATER_TWO = {
+            name: "Giocatore Due",
+            simbolo: "O"
+        }
+        const PLAYERS = [
+            PLAYER_ONE,
+            PLATER_TWO
+        ];
+
+        // si riferisce alla posizione in PLAYERS
+        let gCurrentPlayer = 0;
+
+        let gTrisTable = null;
+
+        function clearTrisTable() {
+            gTrisTable = [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+            ]
+        }
+
+        function changeCurrentPlayer(){
+            gCurrentPlayer = Math.abs(gCurrentPlayer - 1);
+        }
+
+        function startGame(){
+
+            clearTrisTable();
+
+            document.body.innerText = "";
+            document.body.appendChild(viewTable());
+        }
+
+        function viewTable(){
+            const trisTable = gTrisTable;
+            const table = document.createElement("div");
+            table.className = "table";
+            for (let r = 0; r < trisTable.length; r += 1){
+                const tableRow = document.createElement("div");
+                tableRow.className = "table-row";
+                tableRow.id = "row-" + (r + 1);
+                for (let c = 0; c < trisTable[r].length; c += 1){
+                    tableRow.appendChild(viewTrisCell(r, c));
+                }
+                table.appendChild(tableRow);
+            }
+            return table;
+        }
+
+        function viewTrisCell(row, col){
+            const ele = document.createElement("div");
+            ele.className = `tris-cell cell-col-${col + 1}`;
+            ele.id = "cell-" + (row + 1) + "-" + (col + 1);
+            ele.addEventListener("click", () => onClickCell(ele, row, col));
+            return ele;
+        }
+
+        function onClickCell(element, row, col){
+            const player = PLAYERS[gCurrentPlayer];
+            const simbolo = player.simbolo;
+
+            if (gTrisTable[row][col]) {
+                alert("Cella non valida, ritenta!");
+
+            } else {
+                // aggiorno la vista utente
+                const eleSimbolo = document.createElement("div");
+                eleSimbolo.appendChild(document.createTextNode(simbolo));
+
+                element.style.backgroundColor = "#ff0";
+                element.appendChild(eleSimbolo);
+
+                // aggiorna i dati interni
+                gTrisTable[row][col] = simbolo;
+                console.log("gTrisTable", gTrisTable);
+
+                /// todo verificare se qualcuno ha vinto...
+                const winnerSimbol = winCheck();
+                if (winnerSimbol){
+                    const giocatoreNome = PLAYERS[simboloToPlayer(winnerSimbol)].name
+                    console.log("HA VINTO" + giocatoreNome + " winnerSimbol IS", winnerSimbol);
+                    alert("VINTO " + giocatoreNome);
+
+                } else if (isStallCheck()) {
+                    alert("Partita finita, nessuno ha vinto!")
+                }
+
+                changeCurrentPlayer();
+            }
+        }
+
+        function simboloToPlayer(simbolo){
+            // dato un simbolo restituisce l'indice di PLAYERS del giocatore corrispondente
+            for (let i = 0; i < PLAYERS.length; i +=1){
+                if (PLAYERS[i].simbolo === simbolo){
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function winCheckValutateSimbolo(data, simbolo) {
+            if (data.filter(value => value === simbolo).length === 3) {
+                return simbolo;
+            }
+            return "";
+        }
+
+        function isStallCheck(){
+            // restiruisce True se tutte le celle hanno un simbolo
+            // e quindi il gioco non può proseguire
+            for (let row = 0; row < 3; row +=1){
+                for (let col = 0; col < 3; col += 1){
+                    if (gTrisTable[row][col] === 0) {
+                        return false;
+                    }
+                }
+            }
+            return true
+        }
+
+        function winCheck(){
+            // restituisce il sibolo del giocatore che ha vinto
+            // altrimenti una stinga vuota
+
+            const simboli = [PLAYERS[0].simbolo, PLAYERS[1].simbolo];
+
+            for (let simbolo of simboli){
+
+                const datiDaValutare = [];
+
+                // VERIFICA LE RIGHE
+                for (let row of gTrisTable){
+                    datiDaValutare.push(row);
+                }
+
+                // verifica valori in colonna
+                for (let column = 0; column < 3; column += 1){
+                    let colData = [];
+                    for (let row = 0; row < 3; row += 1) {
+                        colData.push(gTrisTable[row][column])
+                    }
+                    datiDaValutare.push(colData);
+                }
+
+                // verifica diagonali
+                let colDiagonale = [];
+                for (let r = 0; r < 3; r += 1) {
+                    colDiagonale.push(gTrisTable[r][r]);
+                }
+                datiDaValutare.push(colDiagonale)
+
+                // valuta la diagonale inversa
+                let diagonaleInv = [
+                    gTrisTable[0][2],
+                    gTrisTable[1][1],
+                    gTrisTable[2][0]
+                ]
+                datiDaValutare.push(diagonaleInv);
+
+                // esegue il test su tutti i datiDaValutare
+                for (let i = 0; i < datiDaValutare.length; i +=1){
+                    if (winCheckValutateSimbolo(datiDaValutare[i], simbolo)) {
+                        return simbolo;
+                    }
+                }
+            }
+            return "";
+        }
+
+        document.addEventListener("DOMContentLoaded", startGame);
+
+    </script>
+</head>
+<body>
+</body>
+</html>
